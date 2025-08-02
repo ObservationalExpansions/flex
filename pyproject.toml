@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flex"
+authors = [
+  { name="Michael S. Petersen", email="michael.petersen@roe.ac.uk" },
+]
+description = "Fourier-Laguerre 2D basis function expansions."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.17,<2.0",
+  "scipy>=1.9,<2.0",
+]
+keywords = ["python","basis functions"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/michael-petersen/flex"
+Documentation = "https://flexgal.readthedocs.io"
+
+[tool.setuptools_scm]

@@ -1,0 +1,12 @@
+*__pycache__/
+*.DS_Store
+
+.coverage
+docs/build/
+dist/
+TODO
+
+build/
+
+examples/
+
