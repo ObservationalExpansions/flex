@@ -35,15 +35,22 @@ theta = np.random.uniform(0, 2*np.pi, N)
 mass = np.random.uniform(0, 1, N)
 
 # set expansion parameters
-rscl,mmax,nmax = 1.0,0,10
+rscl,mmax,nmax = 1.0,2,10
 
 F = flex.FLEX(rscl,mmax,nmax,r,theta)
+
+# to compute the total power in each harmonic,
+totalm = np.linalg.norm(np.sqrt(F.coscoefs**2 + F.sincoefs**2), axis=1)
+
+# and them compute a ratio
+eta = totalm[2]/totalm[0]
+print('ratio of m=2 to m=0:',eta)
 ```
 
 
 ## Documentation
 
-Complete documentation, including more example notebooks, will be available at [at this URL]().
+More complete documentation _will_ be available at [at this URL]().
 
 ## Contributing
 

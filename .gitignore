@@ -5,7 +5,6 @@ src/flex.egg-info/
 src/flex/laguerre_cython.c
 src/flex/laguerre_cython.cpython*
 src/flex/laguerre_cython.html
-src/flex/laguerre_cython.pyx
 
 .coverage
 docs/build/
