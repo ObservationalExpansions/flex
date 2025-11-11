@@ -2,7 +2,7 @@
 
 **Fourier-Laguerre expansions for images of galaxies.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/michael-petersen/flex/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ObservationalExpansions/flex/blob/main/LICENSE)
 
 
 
@@ -11,7 +11,7 @@
 
 Installation of `flex` currently proceeds from local builds after cloning this repository:
 ```
-git clone https://github.com/michael-petersen/flex.git
+git clone https://github.com/ObservationalExpansions/flex.git
 ```
 
 ```
