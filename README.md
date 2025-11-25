@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ObservationalExpansions/flex/blob/main/LICENSE)
 
-
+[![Coverage Status](https://coveralls.io/repos/github/ObservationalExpansions/flex/badge.svg?branch=main)](https://coveralls.io/github/ObservationalExpansions/flex?branch=main)
 
 
 ## Installation

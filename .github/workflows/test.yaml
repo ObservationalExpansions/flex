@@ -27,6 +27,10 @@ jobs:
         env:
             NUMBA_DISABLE_COVERAGE: "1"
         run: |  
-          coverage run -m pytest  -v -s  
-
+          coverage run -m pytest -v -s  
+      - name: Upload coverage to Coveralls
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
