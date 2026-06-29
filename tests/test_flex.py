@@ -102,18 +102,31 @@ def test_flex_total_power():
     assert np.all(totalm >= 0)
 
 
-def test_flex_total_normalisation():
-    # Create a FLEX instance
+def test_flex_reconstruction_peak_amplitude():
     rscl = 1.0
-    mmax = 0
-    nmax = 1
-    R = np.linspace(0.1, 5.0, 100)
-    phi = np.linspace(0, 2*np.pi, 100)
-    mass = np.ones(100)
+    mmax = 2
+    nmax = 6
+    peak_density = 3.5
 
-    F = flex.FLEX(rscl, mmax, nmax, R, phi, mass)
+    nr = 120
+    nphi = 96
+    r_edges = np.linspace(0, 6, nr + 1)
+    phi_edges = np.linspace(0, 2*np.pi, nphi + 1)
+    r = 0.5 * (r_edges[:-1] + r_edges[1:])
+    phi = 0.5 * (phi_edges[:-1] + phi_edges[1:])
 
-    F.laguerre_reconstruction(R, phi)
+    R, phi_grid = np.meshgrid(r, phi, indexing="ij")
+    dr = np.diff(r_edges)[:, np.newaxis]
+    dphi = np.diff(phi_edges)[np.newaxis, :]
 
-    # check the values for the norm
-    #print(F.reconstruction)
+    density = peak_density * np.exp(-R / rscl) * (1 + 0.2 * np.cos(2 * phi_grid))
+    mass = density * R * dr * dphi
+
+    F = flex.FLEX(rscl, mmax, nmax, R.ravel(), phi_grid.ravel(), mass.ravel())
+    F.laguerre_reconstruction(R.ravel(), phi_grid.ravel())
+
+    np.testing.assert_allclose(
+        np.max(F.reconstruction),
+        np.max(density),
+        rtol=0.05,
+    )

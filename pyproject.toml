@@ -3,7 +3,6 @@ requires = [
   "setuptools>=64",
   "setuptools_scm>=8",
   "wheel",
-  "Cython>0.29",
   "numpy>=1.17,<2.0"
 ]
 build-backend = "setuptools.build_meta"
@@ -18,8 +17,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
   "numpy>=1.17,<2.0",
-  "scipy>=1.9,<2.0",
-  "numba>=0.55,<1.0"
+  "scipy>=1.9,<2.0"
 ]
 keywords = ["python","basis functions"]
 classifiers = [
@@ -32,8 +30,16 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/michael-petersen/flex"
+Homepage = "https://github.com/ObservationalExpansions/flex"
 Documentation = "https://flexgal.readthedocs.io"
 
 [tool.setuptools_scm]
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
