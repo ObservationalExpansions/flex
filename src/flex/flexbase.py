@@ -1,7 +1,42 @@
+from numbers import Integral, Real
+
 import numpy as np
 
 # for the Laguerre polynomials
 from scipy.special import eval_genlaguerre
+
+
+def _as_1d_numeric_array(name, value):
+    try:
+        array = np.asarray(value, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a numeric array-like structure.") from exc
+
+    if array.ndim != 1:
+        raise ValueError(f"{name} must be a one-dimensional array-like structure.")
+
+    return array
+
+
+def _as_scalar_or_matching_array(name, value, shape):
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be a scalar or array-like structure.")
+
+    if isinstance(value, Real):
+        return value
+
+    try:
+        array = np.asarray(value, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a scalar or numeric array-like structure.") from exc
+
+    if array.ndim == 0:
+        return array.item()
+    if array.shape != shape:
+        raise ValueError(f"{name} must be scalar or have the same shape as R.")
+
+    return array
+
 
 class FLEX:
     """
@@ -38,7 +73,7 @@ class FLEX:
         reconstruction (array-like): Laguerre reconstruction result.
     """
 
-    def __init__(self, rscl, mmax, nmax, R, phi, mass=1., velocity=1.,newaxis=False):
+    def __init__(self, rscl, mmax, nmax, R, phi, mass=1., velocity=1., newaxis=False):
         """
         Initialize the LaguerreAmplitudes instance with parameters.
 
@@ -54,20 +89,28 @@ class FLEX:
         """
 
         # check for input validity
-        if not isinstance(rscl, (int, float)):
+        if not isinstance(rscl, Real) or isinstance(rscl, bool):
             raise ValueError("rscl must be a scalar value.")
-        if not isinstance(mmax, int) or mmax < 0:
+        if not isinstance(mmax, Integral) or isinstance(mmax, bool) or mmax < 0:
             raise ValueError("mmax must be a non-negative integer.")
-        if not isinstance(nmax, int) or nmax < 0:
+        if not isinstance(nmax, Integral) or isinstance(nmax, bool) or nmax < 0:
             raise ValueError("nmax must be a non-negative integer.")
-        if not isinstance(R, (np.ndarray, list)):
+        if not isinstance(R, (np.ndarray, list, tuple)):
             raise ValueError("R must be an array-like structure.")
-        if not isinstance(phi, (np.ndarray, list)):
+        if not isinstance(phi, (np.ndarray, list, tuple)):
             raise ValueError("phi must be an array-like structure.")
-        if not isinstance(mass, (int, float, np.ndarray, list)):
+        if not isinstance(mass, (Real, np.ndarray, list, tuple)):
             raise ValueError("mass must be a scalar or array-like structure.")
-        if not isinstance(velocity, (int, float, np.ndarray, list)):
+        if not isinstance(velocity, (Real, np.ndarray, list, tuple)):
             raise ValueError("velocity must be a scalar or array-like structure.")
+
+        R = _as_1d_numeric_array("R", R)
+        phi = _as_1d_numeric_array("phi", phi)
+        if phi.shape != R.shape:
+            raise ValueError("phi must have the same shape as R.")
+
+        mass = _as_scalar_or_matching_array("mass", mass, R.shape)
+        velocity = _as_scalar_or_matching_array("velocity", velocity, R.shape)
 
         self.rscl     = rscl
         self.mmax     = mmax
@@ -84,7 +127,7 @@ class FLEX:
             # default behaviour 
             self.laguerre_amplitudes()
 
-    def _gamma_n(self,nrange, rscl):
+    def _gamma_n(self, nrange, rscl):
         """
         Calculate the Laguerre alpha=1 normalisation.
 
@@ -97,7 +140,7 @@ class FLEX:
         """
         return (rscl / 2.) * np.sqrt(nrange + 1.)
 
-    def _G_n(self,R, nrange, rscl):
+    def _G_n(self, R, nrange, rscl):
         """
         Calculate the Laguerre basis.
 
@@ -133,15 +176,22 @@ class FLEX:
             tuple: Tuple containing the cosine and sine amplitudes.
         """
 
-        G_j = self._G_n(self.R, np.arange(0,self.nmax,1), self.rscl)
+        G_j = self._G_n(self.R, np.arange(0, self.nmax, 1), self.rscl)
 
         nmvals = self._n_m()
-        cosm = np.array([nmvals[m]*np.cos(m*self.phi) for m in np.arange(0,self.mmax+1,1)])
-        sinm = np.array([nmvals[m]*np.sin(m*self.phi) for m in np.arange(0,self.mmax+1,1)])
+        mrange = np.arange(0, self.mmax + 1, 1)
+        cosm = nmvals[:, np.newaxis] * np.cos(mrange[:, np.newaxis] * self.phi)
+        sinm = nmvals[:, np.newaxis] * np.sin(mrange[:, np.newaxis] * self.phi)
 
         # broadcast to sum values
-        self.coscoefs = np.nansum(cosm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * self.mass * self.velocity,axis=2)
-        self.sincoefs = np.nansum(sinm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * self.mass * self.velocity,axis=2)
+        self.coscoefs = np.nansum(
+            cosm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * self.mass * self.velocity,
+            axis=2,
+        )
+        self.sincoefs = np.nansum(
+            sinm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * self.mass * self.velocity,
+            axis=2,
+        )
 
 
     def laguerre_amplitudes(self):
@@ -152,13 +202,13 @@ class FLEX:
             none. Attributes are added containing the cosine and sine amplitudes.
         """
 
-        G_j = self._G_n(self.R, np.arange(0,self.nmax,1), self.rscl)
+        G_j = self._G_n(self.R, np.arange(0, self.nmax, 1), self.rscl)
 
         nmvals = self._n_m()
-        cosm = np.array([nmvals[m]*np.cos(m*self.phi) for m in np.arange(0,self.mmax+1,1)])
-        sinm = np.array([nmvals[m]*np.sin(m*self.phi) for m in np.arange(0,self.mmax+1,1)])
+        mrange = np.arange(0, self.mmax + 1, 1)
+        cosm = nmvals[:, np.newaxis] * np.cos(mrange[:, np.newaxis] * self.phi)
+        sinm = nmvals[:, np.newaxis] * np.sin(mrange[:, np.newaxis] * self.phi)
 
-        #if scalar:
         if np.isscalar(self.mass) and np.isscalar(self.velocity):
             scale = self.mass * self.velocity  # scalar
             self.coscoefs = scale * np.einsum('mn,jn->mj', cosm, G_j)
@@ -181,13 +231,18 @@ class FLEX:
         Returns:
             array-like: The reconstructed function values.
         """
-        nmvals = self._n_m()
+        rr = _as_1d_numeric_array("rr", rr)
+        pp = _as_1d_numeric_array("pp", pp)
+        if pp.shape != rr.shape:
+            raise ValueError("pp must have the same shape as rr.")
+
         G_j = self._G_n(rr, np.arange(0, self.nmax, 1), self.rscl)
 
-        fftotal = 0.
-        for m in range(0, self.mmax+1):
-            for n in range(0, self.nmax):
-                fftotal += self.coscoefs[m, n] * np.cos(m * pp) * G_j[n]
-                fftotal += self.sincoefs[m, n] * np.sin(m * pp) * G_j[n]
+        mrange = np.arange(0, self.mmax + 1, 1)
+        cosm = np.cos(mrange[:, np.newaxis] * pp)
+        sinm = np.sin(mrange[:, np.newaxis] * pp)
 
-        self.reconstruction = fftotal * 0.5
+        cos_reconstruction = np.einsum('mn,mi,ni->i', self.coscoefs, cosm, G_j)
+        sin_reconstruction = np.einsum('mn,mi,ni->i', self.sincoefs, sinm, G_j)
+
+        self.reconstruction = 0.5 * (cos_reconstruction + sin_reconstruction)
