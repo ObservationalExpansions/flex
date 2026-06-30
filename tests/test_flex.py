@@ -72,6 +72,35 @@ def test_flex_scalars():
     F = flex.FLEX(rscl, mmax, nmax, R, phi, mass, velocity)
 
 
+def test_flex_accepts_zero_dimensional_array_scalars():
+    rscl = 1.0
+    mmax = 2
+    nmax = 10
+    R = np.linspace(0.1, 5.0, 100)
+    phi = np.linspace(0, 2*np.pi, 100)
+    mass = np.array(1.0)
+    velocity = np.array(2.0)
+
+    F = flex.FLEX(rscl, mmax, nmax, R, phi, mass, velocity)
+
+    assert F.mass == 1.0
+    assert F.velocity == 2.0
+
+
+@pytest.mark.parametrize(
+    "R, phi, mass, velocity",
+    [
+        (["bad"], [0.0], 1.0, 1.0),
+        (np.ones((2, 2)), np.ones((2, 2)), 1.0, 1.0),
+        ([0.1], [0.0], True, 1.0),
+        ([0.1], [0.0], ["bad"], 1.0),
+    ],
+)
+def test_flex_rejects_invalid_numeric_inputs(R, phi, mass, velocity):
+    with pytest.raises(ValueError):
+        flex.FLEX(1.0, 0, 1, R, phi, mass, velocity)
+
+
 def test_flex_total_power():
     # Create a FLEX instance
     rscl = 1.0
@@ -130,3 +159,16 @@ def test_flex_reconstruction_peak_amplitude():
         np.max(density),
         rtol=0.05,
     )
+
+
+def test_flex_reconstruction_requires_matching_shapes():
+    F = flex.FLEX(
+        1.0,
+        0,
+        1,
+        np.array([0.1, 0.2, 0.3]),
+        np.array([0.0, np.pi/4, np.pi/2]),
+    )
+
+    with pytest.raises(ValueError):
+        F.laguerre_reconstruction(np.array([0.1, 0.2, 0.3]), np.array([0.0, np.pi/4]))
