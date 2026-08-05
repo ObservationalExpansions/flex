@@ -58,6 +58,7 @@ class FLEX:
         G_n(R, nrange, rscl): Calculate the Laguerre basis.
         n_m(): Calculate the angular normalisation.
         laguerre_amplitudes(): Calculate Laguerre amplitudes for the given parameters.
+        laguerre_covariance(): Calculate covariance across Laguerre orders.
         laguerre_reconstruction(rr, pp): Calculate Laguerre reconstruction.
 
     Attributes:
@@ -70,6 +71,8 @@ class FLEX:
         nmax (int): Maximum order parameter for n.
         coscoefs (array-like): Cosine coefficients.
         sincoefs (array-like): Sine coefficients.
+        coscovariance (array-like): Covariance across cosine Laguerre orders.
+        sincovariance (array-like): Covariance across sine Laguerre orders.
         reconstruction (array-like): Laguerre reconstruction result.
     """
 
@@ -217,6 +220,44 @@ class FLEX:
             # vector case
             self.coscoefs = np.einsum('mn,jn,n->mj', cosm, G_j, self.mass * self.velocity)
             self.sincoefs = np.einsum('mn,jn,n->mj', sinm, G_j, self.mass * self.velocity)
+
+    def laguerre_covariance(self):
+        """Calculate covariance across Laguerre orders for each harmonic.
+
+        Each particle is treated as one observation. Its contribution includes
+        the same mass and velocity factors used by :meth:`laguerre_amplitudes`.
+        Cosine and sine terms are handled separately.
+
+        Returns:
+            tuple: The cosine and sine unbiased sample covariance arrays. Both
+            have axes ordered as ``(m, n, n)``.
+
+        Raises:
+            ValueError: If fewer than two particles are available.
+        """
+        if self.R.size < 2:
+            raise ValueError("At least two particles are required to calculate covariance.")
+
+        G_j = self._G_n(self.R, np.arange(0, self.nmax, 1), self.rscl)
+
+        nmvals = self._n_m()
+        mrange = np.arange(0, self.mmax + 1, 1)
+        cosm = nmvals[:, np.newaxis] * np.cos(mrange[:, np.newaxis] * self.phi)
+        sinm = nmvals[:, np.newaxis] * np.sin(mrange[:, np.newaxis] * self.phi)
+        weights = self.mass * self.velocity
+
+        cos_terms = cosm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * weights
+        sin_terms = sinm[:, np.newaxis, :] * G_j[np.newaxis, :, :] * weights
+        cos_centered = cos_terms - np.mean(cos_terms, axis=2, keepdims=True)
+        sin_centered = sin_terms - np.mean(sin_terms, axis=2, keepdims=True)
+
+        self.coscovariance = np.einsum(
+            'mni,mji->mnj', cos_centered, cos_centered
+        ) / (self.R.size - 1)
+        self.sincovariance = np.einsum(
+            'mni,mji->mnj', sin_centered, sin_centered
+        ) / (self.R.size - 1)
+        return self.coscovariance, self.sincovariance
 
     def laguerre_reconstruction(self, rr, pp):
         """
