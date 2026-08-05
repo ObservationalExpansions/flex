@@ -131,6 +131,48 @@ def test_flex_total_power():
     assert np.all(totalm >= 0)
 
 
+def test_laguerre_covariance_matches_numpy_covariance():
+    R = np.array([0.2, 0.5, 0.9, 1.4])
+    phi = np.array([0.1, 0.7, 1.8, 2.6])
+    mass = np.array([1.0, 2.0, 0.5, 1.5])
+    velocity = np.array([3.0, 1.0, 2.0, 4.0])
+    F = flex.FLEX(1.0, 2, 3, R, phi, mass, velocity)
+
+    coscovariance, sincovariance = F.laguerre_covariance()
+
+    G_j = F._G_n(R, np.arange(F.nmax), F.rscl)
+    mrange = np.arange(F.mmax + 1)
+    angular_norm = F._n_m()
+    cos_terms = (
+        angular_norm[:, None, None]
+        * np.cos(mrange[:, None, None] * phi[None, None, :])
+        * G_j[None, :, :]
+        * (mass * velocity)
+    )
+    sin_terms = (
+        angular_norm[:, None, None]
+        * np.sin(mrange[:, None, None] * phi[None, None, :])
+        * G_j[None, :, :]
+        * (mass * velocity)
+    )
+    expected_cos = np.array([np.cov(terms) for terms in cos_terms])
+    expected_sin = np.array([np.cov(terms) for terms in sin_terms])
+
+    assert coscovariance.shape == (3, 3, 3)
+    assert sincovariance.shape == (3, 3, 3)
+    np.testing.assert_allclose(coscovariance, expected_cos)
+    np.testing.assert_allclose(sincovariance, expected_sin)
+    assert F.coscovariance is coscovariance
+    assert F.sincovariance is sincovariance
+
+
+def test_laguerre_covariance_requires_two_particles():
+    F = flex.FLEX(1.0, 1, 2, [0.2], [0.3])
+
+    with pytest.raises(ValueError, match="At least two particles"):
+        F.laguerre_covariance()
+
+
 def test_flex_reconstruction_peak_amplitude():
     rscl = 1.0
     mmax = 2
